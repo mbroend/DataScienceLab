@@ -20,7 +20,7 @@ class Connection:
     Connection class for easy interfacing with SQL Server.
     Instanciate an object with the server and database 
     """
-    def __init__(self, server, database, driver = "ODBC Driver 17 for SQL Server", systemuser=False):
+    def __init__(self, server, database, driver = "ODBC Driver 13 for SQL Server", systemuser=False):
         self.driver = driver
         self.server = server
         self.database = database
