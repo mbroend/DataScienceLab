@@ -1,1 +1,1 @@
-from datasciencelab.sql import Connection
+from DataScienceLab.sql import Connection
