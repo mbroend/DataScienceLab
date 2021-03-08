@@ -20,17 +20,19 @@ class Connection:
     Connection class for easy interfacing with SQL Server.
     Instanciate an object with the server and database 
     """
-    def __init__(self, server, database, driver = "ODBC Driver 17 for SQL Server"):
+    def __init__(self, server, database, driver = "ODBC Driver 17 for SQL Server", systemuser=False):
         self.driver = driver
         self.server = server
         self.database = database
-        uid = os.environ.get('MSSQL_USERNAME')
-        pwd = os.environ.get('MSSQL_PASSWORD')
-        DSN = os.environ.get('MSSQL_ENV')
-        params = urllib.parse.quote("DSN={0};DATABASE={1};UID={2};PWD={3}".format(DSN, self.database, uid, pwd))
-        #params = urllib.parse.quote("DSN={0};UID={1};PWD={2}".format(DSN, uid, pwd))
-	#params = urllib.parse.quote("DRIVER={0};SERVER={1};DATABASE={2};Trusted_Connection=yes".format(self.driver, self.server, self.database))
-        self.engine = create_engine("mssql+pyodbc:///?odbc_connect=%s" % params, poolclass= NullPool)#, fast_executemany=True)
+        if systemuser:
+            uid = os.environ.get('MSSQL_USERNAME')
+            pwd = os.environ.get('MSSQL_PASSWORD')
+            DSN = os.environ.get('MSSQL_ENV')
+            params = urllib.parse.quote("DSN={0};DATABASE={1};UID={2};PWD={3}".format(DSN, self.database, uid, pwd))
+            self.engine = create_engine("mssql+pyodbc:///?odbc_connect=%s" % params, poolclass= NullPool)
+        else:
+            params = urllib.parse.quote("DRIVER={0};SERVER={1};DATABASE={2};Trusted_Connection=yes".format(self.driver, self.server, self.database))
+            self.engine = create_engine("mssql+pyodbc:///?odbc_connect=%s" % params, poolclass= NullPool, fast_executemany=True)
     
     def insert(self,schema,table_name,dataframe):
         """
