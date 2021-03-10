@@ -25,9 +25,11 @@ class Connection:
         self.server = server
         self.database = database
         if systemuser:
+            # Get username and password from environment
             uid = os.environ.get('MSSQL_USERNAME')
             pwd = os.environ.get('MSSQL_PASSWORD')
-            DSN = os.environ.get('MSSQL_ENV')
+            # Server must match DNS configuration for the system running the script
+            DSN = self.server
             params = urllib.parse.quote("DSN={0};DATABASE={1};UID={2};PWD={3}".format(DSN, self.database, uid, pwd))
             self.engine = create_engine("mssql+pyodbc:///?odbc_connect=%s" % params, poolclass= NullPool)
         else:
