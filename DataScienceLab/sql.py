@@ -214,22 +214,27 @@ class Connection:
                 print('Failed to truncate table')
                 print(e)
     
-    def execute_storedprocedure(self,schema,storedprocedure, params):
-        sql = "execute "+schema+"."+storedprocedure 
-        for key in params:
-            if params[key] == 'numeric':
-                sql = sql + " " +  str(key) + ","
-            elif params[key] == 'string':
-                sql = sql + " '" + str(key) + "'," 
-            elif params[key] == 'varbinary':
-                sql = sql + " " + str(key) + ","
-            elif params[key] == 'datetime':
-                sql = sql + " '" + str(key) + "',"
-        #remove trailing ,
-        sql = sql[:-1]
+    def execute_storedprocedure(self,schema,proc_name,params):
+        '''
+        Execute a storedprocedure
+        '''
+        sql_params = ''
+        for name, value in params.items():
+            if (isinstance(value, str) and value[:2]!='0x'):
+                sql_param = "@{0}='{1}'".format(name, value)
+            else:
+                sql_param = "@{0}={1}".format(name, value)
+            sql_params = sql_params + sql_param + ','
+        sql_params = sql_params[:-1]
+        #sql_params = ",".join(["@{0}={1}".format(name, value) for name, value in params.items()])
+        sql_string = """
+            DECLARE @return_value int;
+            EXEC    @return_value = [{schema}].[{proc_name}] {params};
+            SELECT 'Return Value' = @return_value;
+        """.format(schema=schema, proc_name=proc_name, params=sql_params)
         Session = sessionmaker(bind=self.engine)
         session = Session()
-        results = session.execute(sql).fetchone()
+        results = session.execute(sql_string).fetchall()        
         session.commit()
         session.close()
-        return results[0]
+        return results
