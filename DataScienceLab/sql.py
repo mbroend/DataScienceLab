@@ -18,7 +18,14 @@ import os
 class Connection:
     """
     Connection class for easy interfacing with SQL Server.
-    Instanciate an object with the server and database 
+    Instanciate an object with the server and database.
+    INPUT:
+    - server: Server address or network alias
+    - database: Database name on database server
+    - driver (OPTIONAL): Driver for handling connection
+    - systemuser (OPTIONAL): Set to true if module is used for applications with a systemuser. The module will look for username and password in the environment variables MSSQL_USERNAME, MSSQL_PASSWORD 
+    OUTPUT:
+    - connection object
     """
     def __init__(self, server, database, driver = "ODBC Driver 13 for SQL Server", systemuser=False):
         self.driver = driver
@@ -214,27 +221,46 @@ class Connection:
                 print('Failed to truncate table')
                 print(e)
     
-    def execute_storedprocedure(self,schema,proc_name,params):
+    def execute_storedprocedure(self,schema,proc_name,params=None):
         '''
-        Execute a storedprocedure
+        Execute a storedprocedure.
+        INPUT:
+        - Schema
+        - Stored Procedure name
+        - Params: Dict of parameters for the store procedured. Keys are paremeter names, values are parameter values. (@ are added automatically)
+        OUTPUT:
+        - Result: List of resultsets from stored procedure. Last element will always be the return code.
         '''
         sql_params = ''
-        for name, value in params.items():
-            if (isinstance(value, str) and value[:2]!='0x'):
-                sql_param = "@{0}='{1}'".format(name, value)
-            else:
-                sql_param = "@{0}={1}".format(name, value)
-            sql_params = sql_params + sql_param + ','
-        sql_params = sql_params[:-1]
-        #sql_params = ",".join(["@{0}={1}".format(name, value) for name, value in params.items()])
+        # If parameters are supplied format 
+        if params != None:
+            for name, value in params.items():
+                # Handling cases with varbinary parameters
+                if (isinstance(value, str) and value[:2]!='0x'):
+                    sql_param = "@{0}='{1}'".format(name, value)
+                else:
+                    sql_param = "@{0}={1}".format(name, value)
+                sql_params = sql_params + sql_param + ','
+            # Remove trailing comma
+            sql_params = sql_params[:-1]
+        # Generate exectution string
         sql_string = """
             DECLARE @return_value int;
             EXEC    @return_value = [{schema}].[{proc_name}] {params};
             SELECT 'Return Value' = @return_value;
         """.format(schema=schema, proc_name=proc_name, params=sql_params)
-        Session = sessionmaker(bind=self.engine)
-        session = Session()
-        results = session.execute(sql_string).fetchall()        
-        session.commit()
-        session.close()
-        return results
+        # Establish connection and execute execution string
+        connection = self.engine.raw_connection()
+        cursor_obj = connection.cursor()
+        cursor_obj.execute(sql_string)
+
+        # Loop through resultsets and append to result
+        result = []
+        while True:
+            try: 
+                result.append(cursor_obj.fetchall())
+                cursor_obj.nextset()
+            except:
+                cursor_obj.close()
+                break        
+        return result
