@@ -4,7 +4,7 @@ import json
 def flatten_json(json_obj):
     '''
     Flatten an abritary json structure to a 2D dataframe.
-    Subdicts will be expanded to columns and lists will be 
+    Subdicts will be expanded to columns and lists will be expanded as rows.
     INPUT:
     - json_obj: List of dicts with json data
     OUTPUT:

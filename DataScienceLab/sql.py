@@ -57,7 +57,6 @@ class Connection:
         tst = time.time()
         
         try:
-            print('inserting rows pre')
             dataframe.to_sql(name = table_name, con = self.engine, schema = schema,
                              if_exists='append',index=False)#, method = 'multi')
             tdif = time.time()-tst
@@ -250,17 +249,25 @@ class Connection:
             SELECT 'Return Value' = @return_value;
         """.format(schema=schema, proc_name=proc_name, params=sql_params)
         # Establish connection and execute execution string
-        connection = self.engine.raw_connection()
-        cursor_obj = connection.cursor()
-        cursor_obj.execute(sql_string)
-
-        # Loop through resultsets and append to result
-        result = []
-        while True:
-            try: 
-                result.append(cursor_obj.fetchall())
-                cursor_obj.nextset()
-            except:
-                cursor_obj.close()
-                break        
-        return result
+        try:
+            # Create cursor and execute
+            connection = self.engine.raw_connection()
+            cursor_obj = connection.cursor()
+            cursor_obj.execute(sql_string)
+           
+            # Loop through resultsets and append to result
+            result = []
+            while True:
+                try: 
+                    result.append(cursor_obj.fetchall())
+                    cursor_obj.nextset()
+                except:
+                    # Commit query and close cursor
+                    cursor_obj.commit()
+                    cursor_obj.close()
+                    break        
+            return result
+        except Exception as e:
+            print('Unable to execute storeprocedure: {0}.{1}'.format(schema,proc_name))
+            print(e)
+        
