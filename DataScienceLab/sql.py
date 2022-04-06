@@ -65,7 +65,7 @@ class Connection:
             print('--- On {0}: {1} rows inserted into {2}.{3}.{4} in {5} seconds'.format(self.server,dataframe.shape[0],self.database,schema,table_name,round(tdif,2)))
         except Exception as e:
             print('--- On {0}: Could not insert rows into {1}.{2}.{3}'.format(self.server,self.database,schema,table_name))
-            raise e
+            raise
         return
     
     def replace(self,schema,table_name,dataframe):
@@ -90,7 +90,7 @@ class Connection:
             print('--- On {0}: {1} rows inserted into {2}.{3}.{4} in {5} seconds'.format(self.server,dataframe.shape[0],self.database,schema,table_name,round(tdif,2)))
         except Exception as e:
             print('--- On {0}: Could not replace table {1}.{2}.{3}'.format(self.server,self.database,schema,table_name))
-            raise e
+            raise
         return
     
     def read_table(self,schema,table_name):
@@ -113,7 +113,7 @@ class Connection:
             return df
         except Exception as e:
             print('failed to read query')
-            raise e
+            raise
         
     
     def read_sql(self,query):
@@ -135,7 +135,7 @@ class Connection:
             return df
         except Exception as e:
             print('failed to read query')
-            raise e
+            raise
        
     def create(self,schema,table_name,dataframe,primary_key = []):
         """
@@ -220,7 +220,7 @@ class Connection:
                 print('{}.{} was truncated'.format(schema,table_name))
             except Exception as e:
                 print('Failed to truncate table')
-                raise e
+                raise
     
     def execute_storedprocedure(self,schema,proc_name,params=None):
         '''
@@ -271,5 +271,5 @@ class Connection:
             return result
         except Exception as e:
             print('Unable to execute storeprocedure: {0}.{1}'.format(schema,proc_name))
-            raise e
+            raise
         
