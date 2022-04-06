@@ -4,6 +4,7 @@ Created on Thu Sep 10 10:19:25 2020
 Module for simplifying basic SQL operations from python
 @author: Mathias Brønd Sørensen
 """
+from click import echo
 from sqlalchemy import create_engine
 from sqlalchemy.pool import NullPool
 from sqlalchemy.sql import text as sa_text
@@ -64,7 +65,7 @@ class Connection:
             print('--- On {0}: {1} rows inserted into {2}.{3}.{4} in {5} seconds'.format(self.server,dataframe.shape[0],self.database,schema,table_name,round(tdif,2)))
         except Exception as e:
             print('--- On {0}: Could not insert rows into {1}.{2}.{3}'.format(self.server,self.database,schema,table_name))
-            print(e)
+            raise e
         return
     
     def replace(self,schema,table_name,dataframe):
@@ -89,7 +90,8 @@ class Connection:
             print('--- On {0}: {1} rows inserted into {2}.{3}.{4} in {5} seconds'.format(self.server,dataframe.shape[0],self.database,schema,table_name,round(tdif,2)))
         except Exception as e:
             print('--- On {0}: Could not replace table {1}.{2}.{3}'.format(self.server,self.database,schema,table_name))
-            print(e)
+            raise e
+        return
     
     def read_table(self,schema,table_name):
         """
@@ -111,7 +113,7 @@ class Connection:
             return df
         except Exception as e:
             print('failed to read query')
-            print(e)
+            raise e
         
     
     def read_sql(self,query):
@@ -133,7 +135,7 @@ class Connection:
             return df
         except Exception as e:
             print('failed to read query')
-            print(e)
+            raise e
        
     def create(self,schema,table_name,dataframe,primary_key = []):
         """
@@ -218,17 +220,17 @@ class Connection:
                 print('{}.{} was truncated'.format(schema,table_name))
             except Exception as e:
                 print('Failed to truncate table')
-                print(e)
+                raise e
     
     def execute_storedprocedure(self,schema,proc_name,params=None):
         '''
         Execute a storedprocedure.
         INPUT:
-        - Schema
-        - Stored Procedure name
-        - Params: Dict of parameters for the store procedured. Keys are paremeter names, values are parameter values. (@ are added automatically)
+            Schema
+            Stored Procedure name
+            Params: Dict of parameters for the store procedured. Keys are paremeter names, values are parameter values. (@ are added automatically)
         OUTPUT:
-        - Result: List of resultsets from stored procedure. Last element will always be the return code.
+            Result: List of resultsets from stored procedure. Last element will always be the return code.
         '''
         sql_params = ''
         # If parameters are supplied format 
@@ -269,5 +271,5 @@ class Connection:
             return result
         except Exception as e:
             print('Unable to execute storeprocedure: {0}.{1}'.format(schema,proc_name))
-            print(e)
+            raise e
         
