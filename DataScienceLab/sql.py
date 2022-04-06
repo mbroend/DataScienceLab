@@ -14,6 +14,8 @@ import time
 import urllib
 import math
 import os
+import sys
+import shutil
 
 
 class Connection:
@@ -292,16 +294,11 @@ class Connection:
             raise Exception('The data you want to insert is taking op more space than 10 Gb of RAM and hence it is not supported.')
         try:
             dataframe.to_csv(path_or_buf=filename,index=False,sep=separator)    
-            endWrite = time.time() - startWrite
-            print(f"Write time {endWrite}")
 
-            startMove = time.time()
             if sys.platform == 'win32':
                 os.system('copy "%s" "%s" /y' % (filename, filepath))
             else:
                 shutil.copyfile(filename, filepath)
-            endMove = time.time() - startMove
-            print(f"Move time {endMove}")
             #dataframe.to_csv(path_or_buf=filepath,index=False,sep=separator)          
         except Exception as e:
             print(f"Unable to write csv-file and move file to the server of the SQL Server to path: {filepath}. Common problems include the folders not existing.")
@@ -322,7 +319,6 @@ class Connection:
         """
         try:
             # Create cursor and execute
-            startBulk = time.time()
             connection = self.engine.raw_connection()
             cursor_obj = connection.cursor()
             print(f'Inserting rows into: {self.database}.{schema}.{table_name}')
@@ -330,10 +326,6 @@ class Connection:
             cursor_obj.execute(sql_string)
             cursor_obj.commit()
             cursor_obj.close()
-    
-            endBulk = time.time()-startBulk
-            print('Total bulk insert time in seconds: ' + str(endBulk))
-            
         except Exception as e:
             print(f'Unable to bulk insert into: {self.database}.{schema}.{table_name}')
             raise
