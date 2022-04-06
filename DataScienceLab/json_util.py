@@ -35,20 +35,21 @@ def flatten_json(json_obj):
         '''
         Expand dataframe with dicts as columns and lists as rows until no more dicts/lists are present in dataset.
         '''
-        shape = df.shape
-        # initilize new shape as something that is always different from existing shape
-        new_shape = (-1,-1)
-        while shape!=new_shape:
-            shape = df.shape
+        cols = list(df.columns)
+        # initialize new_cols with something that won't match column names
+        new_cols = ['totallynotacolumn']
+        while cols!=new_cols:  # keep going untill column names stop changing
+            cols = list(df.columns)
             lists = list_cols(df)
             for rec in lists:
                 df = df.explode(rec)
-
             dicts = dict_cols(df)
             for col in dicts:
                 df = pd.concat([df.drop([col], axis=1), df[col].apply(pd.Series).add_prefix(col+'.')], axis=1)
-            new_shape = df.shape
+            new_cols = list(df.columns)
+
         return df
+
     df = pd.json_normalize(json_obj)
     df = explode_json(df)
 

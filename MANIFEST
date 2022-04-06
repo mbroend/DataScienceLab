@@ -3,5 +3,5 @@ setup.cfg
 setup.py
 DataScienceLab/__about__.py
 DataScienceLab/__init__.py
-DataScienceLab/json.py
+DataScienceLab/json_util.py
 DataScienceLab/sql.py
