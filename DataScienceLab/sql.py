@@ -273,3 +273,81 @@ class Connection:
             print('Unable to execute storeprocedure: {0}.{1}'.format(schema,proc_name))
             raise
         
+    def bulk_insert(self,schema,table_name,dataframe,separator='\u0001'):
+        '''
+        Bulk insert large amounts of data into a table by writing data to a csv-file and using it as input for native command on SQL Server.
+        INPUT:
+            schema: Destination schema
+            table_name: Destination Table name
+            dataframe: Data to be inserted
+            seperator (optional): Seperator used in temporary csv-file. Defaulted to a non-keyboard character
+        OUTPUT:
+            None
+        '''
+        servername = self.read_sql("select replace(replace(@@SERVERNAME,'\dsa',''),'\dpa','')").values[0][0]
+        filename = f"bulk_insert_{schema}_{table_name}.csv"
+        filepath = f"\\\\{servername}\_Faelles\{self.database}\\{filename}"
+        RAM = dataframe.memory_usage().sum()
+        if RAM > 10000000000:
+            raise Exception('The data you want to insert is taking op more space than 10 Gb of RAM and hence it is not supported.')
+        try:
+            dataframe.to_csv(path_or_buf=filename,index=False,sep=separator)    
+            endWrite = time.time() - startWrite
+            print(f"Write time {endWrite}")
+
+            startMove = time.time()
+            if sys.platform == 'win32':
+                os.system('copy "%s" "%s" /y' % (filename, filepath))
+            else:
+                shutil.copyfile(filename, filepath)
+            endMove = time.time() - startMove
+            print(f"Move time {endMove}")
+            #dataframe.to_csv(path_or_buf=filepath,index=False,sep=separator)          
+        except Exception as e:
+            print(f"Unable to write csv-file and move file to the server of the SQL Server to path: {filepath}. Common problems include the folders not existing.")
+            raise
+        
+        sql_string = f"""
+            BULK INSERT {schema}.{table_name} 
+            FROM '{filepath}'
+            WITH (
+                FIRSTROW = 2,
+	            KEEPNULLS,
+                TABLOCK,
+                FIELDTERMINATOR = '{separator}',
+                ROWTERMINATOR='\n',
+                BATCHSIZE=250000,
+                MAXERRORS=2
+            );
+        """
+        try:
+            # Create cursor and execute
+            startBulk = time.time()
+            connection = self.engine.raw_connection()
+            cursor_obj = connection.cursor()
+            print(f'Inserting rows into: {self.database}.{schema}.{table_name}')
+            # Execute and close cursor
+            cursor_obj.execute(sql_string)
+            cursor_obj.commit()
+            cursor_obj.close()
+    
+            endBulk = time.time()-startBulk
+            print('Total bulk insert time in seconds: ' + str(endBulk))
+            
+        except Exception as e:
+            print(f'Unable to bulk insert into: {self.database}.{schema}.{table_name}')
+            raise
+
+        # Cleanup
+        try:
+            # Delete file on server
+            os.remove(filepath)
+        except Exception as e:
+            print(f'Could not delete file: {filepath}')
+            raise
+        try:
+            # Delete local file
+            os.remove(filename)
+        except Exception as e:
+            print(f'Could not delete file: {filename}')
+            raise
